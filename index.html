@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#16345a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calibração de Tanques</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #d8dee6;
+    --primary: #1769aa;
+    --primary-dark: #0f4f82;
+    --success: #16794a;
+    --warning: #9a6700;
+    --danger: #b42318;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  h1 { margin: 0 0 6px; font-size: 28px; }
+  h2 { margin: 0 0 16px; font-size: 19px; }
+  .subtitle { color: var(--muted); margin-bottom: 22px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .type-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .type-buttons label {
+    flex: 1;
+    cursor: pointer;
+  }
+  .type-buttons input { display: none; }
+  .type-buttons span {
+    display: block;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: bold;
+  }
+  .type-buttons input:checked + span {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+  .dimension-area {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 24px;
+    align-items: center;
+  }
+  .tank-wrap {
+    min-height: 180px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .tank {
+    width: 100%;
+    max-width: 360px;
+    height: 220px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+  }
+  .tank.horizontal,
+  .tank.vertical {
+    width: 100%;
+    height: 220px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+  }
+  .tank svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .dimension-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  label.field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 11px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 15px;
+  }
+  .unit { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+  }
+  th, td {
+    border-bottom: 1px solid var(--border);
+    padding: 9px;
+    text-align: left;
+  }
+  th {
+    background: #f7f9fb;
+    font-size: 13px;
+  }
+  td input { min-width: 130px; }
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  button {
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .primary { background: var(--primary); color: white; }
+  .primary:hover { background: var(--primary-dark); }
+  .secondary { background: #e8edf2; color: var(--text); }
+  .danger { background: #fde9e7; color: var(--danger); }
+  .result-best {
+    border: 2px solid var(--success);
+    background: #f0faf5;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .best-title { color: var(--success); font-weight: bold; font-size: 18px; }
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .metric {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .metric small { display: block; color: var(--muted); margin-bottom: 4px; }
+  .metric strong { font-size: 16px; }
+  .alternatives {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .alternative {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .alternative.best { border-color: var(--success); }
+  .alternative h3 { margin: 0 0 10px; font-size: 16px; }
+  .line { margin: 7px 0; }
+  .line b { float: right; }
+  .note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+  .volume-total {
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: #eef5ff;
+    border: 1px solid #c9daf5;
+    font-weight: 700;
+    color: #183b67;
+  }
+  .conference {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border);
+  }
+  .conference-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 14px;
+  }
+  .conference-help {
+    color: var(--muted);
+    margin: -4px 0 16px;
+    line-height: 1.45;
+  }
+  .conference select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+  }
+  .conference-result {
+    margin-top: 14px;
+    padding: 16px;
+    border-radius: 10px;
+    background: #f5f8fc;
+    border: 1px solid var(--border);
+  }
+  @media(max-width:700px) {
+    .conference-grid { grid-template-columns: 1fr; }
+  }
+  .error {
+    color: var(--danger);
+    background: #fff1f0;
+    border: 1px solid #f2c1bd;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  @media (max-width: 760px) {
+    .container { padding: 12px; }
+    .dimension-area { grid-template-columns: 1fr; }
+    .dimension-fields { grid-template-columns: 1fr; }
+    .result-grid { grid-template-columns: repeat(2, 1fr); }
+    .alternatives { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Calibração de Tanques</h1>
+  <div class="subtitle">Calibração geométrica para tanques cilíndricos — medidas em mm e volumes em litros.</div>
+
+  <div class="card">
+    <h2>1. Tipo e dimensões do tanque</h2>
+
+    <div class="type-buttons">
+      <label>
+        <input type="radio" name="tankType" value="horizontal" checked onchange="changeType()">
+        <span>Tanque Horizontal</span>
+      </label>
+      <label>
+        <input type="radio" name="tankType" value="vertical" onchange="changeType()">
+        <span>Tanque Vertical</span>
+      </label>
+    </div>
+
+    <div class="dimension-area">
+      <div class="tank-wrap">
+        <div id="tankDrawing" class="tank horizontal"></div>
+      </div>
+      <div class="dimension-fields">
+        <div id="diameterField">
+          <label class="field-label">Diâmetro</label>
+          <input id="diameter" type="number" min="1" step="0.01" placeholder="Ex.: 1500">
+          <div class="unit">milímetros (mm)</div>
+        </div>
+
+        <div id="lengthField">
+          <label class="field-label">Comprimento</label>
+          <input id="length" type="number" min="1" step="0.01" placeholder="Ex.: 3000">
+          <div class="unit">milímetros (mm)</div>
+        </div>
+
+        <div id="heightField" style="display:none">
+          <label class="field-label">Altura</label>
+          <input id="height" type="number" min="1" step="0.01" placeholder="Ex.: 3000">
+          <div class="unit">milímetros (mm)</div>
+        </div>
+
+        <div id="widthField" style="display:none">
+          <label class="field-label">Largura / Diâmetro</label>
+          <input id="width" type="number" min="1" step="0.01" placeholder="Ex.: 1500">
+          <div class="unit">milímetros (mm)</div>
+        </div>
+      </div>
+    </div>
+    <div class="volume-total" id="tankVolumeInfo">Informe as dimensões para ver a capacidade geométrica do tanque.</div>
+  </div>
+
+  <div class="card">
+    <h2>2. Dados de calibração</h2>
+    <div id="errorBox" class="error"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Litros recebidos (real)</th>
+            <th>Litros registrados (equipamento)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="dataBody"></tbody>
+      </table>
+    </div>
+
+    <div class="actions">
+      <button class="secondary" onclick="addRow()">+ Adicionar linha</button>
+      <button class="primary" onclick="calculate()">CALCULAR CALIBRAÇÃO</button>
+    </div>
+
+    <div class="note">
+      Informe pelo menos 2 medições com os litros recebidos e os litros registrados pelo equipamento.
+    </div>
+  </div>
+
+  <div class="card" id="results" style="display:none">
+    <h2>3. Sugestões de ajuste</h2>
+    <div id="bestResult"></div>
+    <div class="alternatives" id="alternatives"></div>
+
+    <div class="conference">
+      <h2>4. Simulação da descarga após o ajuste</h2>
+      <p class="conference-help">
+        Escolha uma sugestão de ajuste ou informe manualmente as novas dimensões.
+        Depois informe as alturas inicial e final da sonda para simular quantos litros seriam descarregados.
+      </p>
+
+      <div class="conference-grid">
+        <div>
+          <label class="field-label">Usar como base</label>
+          <select id="simulationOption" onchange="applySimulationOption()">
+            <option value="best">Melhor sugestão</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Diâmetro para simulação (mm)</label>
+          <input id="simDiameter" type="number" min="0" step="0.01" placeholder="Será preenchido pela sugestão">
+        </div>
+        <div>
+          <label class="field-label" id="simOtherLabel">Comprimento para simulação (mm)</label>
+          <input id="simOther" type="number" min="0" step="0.01" placeholder="Será preenchido pela sugestão">
+        </div>
+        <div>
+          <label class="field-label">Altura inicial da sonda (mm)</label>
+          <input id="checkInitial" type="number" min="0" step="0.01" placeholder="Ex.: 1650">
+        </div>
+        <div>
+          <label class="field-label">Altura final da sonda (mm)</label>
+          <input id="checkFinal" type="number" min="0" step="0.01" placeholder="Ex.: 1200">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="secondary" onclick="checkDischarge()">SIMULAR DESCARGA</button>
+      </div>
+      <div id="conferenceResult"></div>
+      <div class="note">
+        A simulação usa somente as dimensões escolhidas e a diferença entre as duas alturas da sonda.
+        Assim você consegue testar se o ajuste sugerido faz a descarga calculada se aproximar do valor esperado.
+      </div>
+    </div>
+
+    <div class="note">
+      O erro apresentado é o erro médio absoluto entre os litros recebidos e os litros registrados.
+      A sugestão dimensional procura a dimensão que melhor aproxima os volumes reais das medições informadas.
+      Para tanques horizontais, é considerada a geometria do cilindro parcialmente cheio.
+    </div>
+  </div>
+</div>
+
+<script>
+const initialRows = 5;
+
+function renderTankDrawing(type) {
+  const d = document.getElementById('tankDrawing');
+  if (type === 'horizontal') d.innerHTML = `
+    <svg viewBox="0 0 360 220" aria-label="Tanque horizontal">
+      <defs><linearGradient id="gH" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#c8d6d9"/><stop offset="1" stop-color="#718b91"/></linearGradient></defs>
+      <rect x="42" y="55" width="276" height="108" rx="54" fill="url(#gH)" stroke="#496269" stroke-width="4"/>
+      <ellipse cx="42" cy="109" rx="15" ry="54" fill="#8fa5aa" stroke="#496269" stroke-width="3"/>
+      <ellipse cx="318" cy="109" rx="15" ry="54" fill="#718b91" stroke="#496269" stroke-width="3"/>
+      <g stroke="#b87412" stroke-width="3" fill="none"><rect x="135" y="25" width="90" height="20"/><line x1="235" y1="45" x2="235" y2="188"/><line x1="255" y1="45" x2="255" y2="188"/><line x1="235" y1="65" x2="255" y2="65"/><line x1="235" y1="85" x2="255" y2="85"/><line x1="235" y1="105" x2="255" y2="105"/><line x1="235" y1="125" x2="255" y2="125"/><line x1="235" y1="145" x2="255" y2="145"/><line x1="235" y1="165" x2="255" y2="165"/></g>
+      <g fill="#263238"><rect x="80" y="160" width="14" height="35"/><rect x="265" y="160" width="14" height="35"/></g>
+    </svg>`;
+  else d.innerHTML = `
+    <svg viewBox="0 0 260 240" aria-label="Tanque vertical">
+      <defs><linearGradient id="gV" x1="0" x2="1"><stop offset="0" stop-color="#718b91"/><stop offset=".5" stop-color="#c8d6d9"/><stop offset="1" stop-color="#718b91"/></linearGradient></defs>
+      <ellipse cx="120" cy="48" rx="62" ry="18" fill="#b8c9cc" stroke="#496269" stroke-width="4"/>
+      <path d="M58 48v140c0 24 28 38 62 38s62-14 62-38V48" fill="url(#gV)" stroke="#496269" stroke-width="4"/>
+      <g stroke="#b87412" stroke-width="3" fill="none"><rect x="62" y="18" width="116" height="18"/><line x1="184" y1="38" x2="184" y2="220"/><line x1="204" y1="38" x2="204" y2="220"/><line x1="184" y1="58" x2="204" y2="58"/><line x1="184" y1="78" x2="204" y2="78"/><line x1="184" y1="98" x2="204" y2="98"/><line x1="184" y1="118" x2="204" y2="118"/><line x1="184" y1="138" x2="204" y2="138"/><line x1="184" y1="158" x2="204" y2="158"/><line x1="184" y1="178" x2="204" y2="178"/></g>
+    </svg>`;
+}
+
+function changeType() {
+  const type = document.querySelector('input[name="tankType"]:checked').value;
+  const horizontal = type === 'horizontal';
+
+  document.getElementById('tankDrawing').className = 'tank ' + type;
+  document.getElementById('diameterField').style.display = horizontal ? '' : 'none';
+  document.getElementById('lengthField').style.display = horizontal ? '' : 'none';
+  document.getElementById('heightField').style.display = horizontal ? 'none' : '';
+  document.getElementById('widthField').style.display = horizontal ? 'none' : '';
+  renderTankDrawing(type);
+}
+
+function addRow(real='', registered='') {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="number" min="0" step="0.01" class="real" value="${real}" placeholder="Litros"></td>
+    <td><input type="number" min="0" step="0.01" class="registered" value="${registered}" placeholder="Litros"></td>
+    <td><button class="danger" onclick="removeRow(this)" title="Remover linha">×</button></td>
+  `;
+  document.getElementById('dataBody').appendChild(tr);
+}
+
+function removeRow(btn) {
+  const rows = document.querySelectorAll('#dataBody tr');
+  if (rows.length > 2) btn.closest('tr').remove();
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+function clearError() {
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+function getTypeAndDimensions() {
+  const type = document.querySelector('input[name="tankType"]:checked').value;
+  if (type === 'horizontal') {
+    const D = Number(document.getElementById('diameter').value);
+    const L = Number(document.getElementById('length').value);
+    if (!(D > 0) || !(L > 0)) throw new Error('Informe o diâmetro e o comprimento do tanque.');
+    return { type, D, L };
+  } else {
+    const D = Number(document.getElementById('width').value);
+    const H = Number(document.getElementById('height').value);
+    if (!(D > 0) || !(H > 0)) throw new Error('Informe a largura/diâmetro e a altura do tanque.');
+    return { type, D, H };
+  }
+}
+
+function getRows() {
+  const rows = [...document.querySelectorAll('#dataBody tr')].map(tr => ({
+    real: Number(tr.querySelector('.real').value),
+    registered: Number(tr.querySelector('.registered').value),
+    initialHeight: null,
+    finalHeight: null
+  })).filter(r => Number.isFinite(r.real) && Number.isFinite(r.registered) && r.real > 0 && r.registered >= 0);
+  if (rows.length < 2) throw new Error('Informe pelo menos 2 medições válidas de litros recebidos e registrados.');
+  return rows;
+}
+
+
+function totalTankVolume(dim) {
+  return dim.type === 'horizontal'
+    ? horizontalVolume(dim.D, dim.L, dim.D)
+    : verticalVolume(dim.D, dim.H, dim.H);
+}
+
+function updateTankVolume() {
+  const box = document.getElementById('tankVolumeInfo');
+  try {
+    const dim = getTypeAndDimensions();
+    box.innerHTML = `Volume geométrico do tanque: <strong>${mm(totalTankVolume(dim))} litros</strong>`;
+  } catch (e) {
+    box.textContent = 'Informe as dimensões para ver a capacidade geométrica do tanque.';
+  }
+}
+
+// Volume em litros de um cilindro vertical até a altura h.
+function verticalVolume(D, H, h) {
+  const r = D / 2;
+  const hh = Math.max(0, Math.min(H, h));
+  return Math.PI * r * r * hh / 1e6;
+}
+
+// Volume em litros de um cilindro horizontal até a altura h.
+function horizontalVolume(D, L, h) {
+  const r = D / 2;
+  const hh = Math.max(0, Math.min(D, h));
+  if (hh <= 0) return 0;
+  if (hh >= D) return Math.PI * r * r * L / 1e6;
+
+  const area = r*r * Math.acos((r-hh)/r) - (r-hh) * Math.sqrt(Math.max(0, 2*r*hh - hh*hh));
+  return area * L / 1e6;
+}
+
+function modelVolume(dim, h) {
+  if (h == null) return null;
+  return dim.type === 'horizontal'
+    ? horizontalVolume(dim.D, dim.L, h)
+    : verticalVolume(dim.D, dim.H, h);
+}
+
+// Para cada alternativa, encontramos um fator dimensional ótimo por busca.
+// O alvo é reproduzir os litros reais a partir dos litros registrados.
+function fitOneDimension(dim, rows, mode) {
+  const baseD = dim.D;
+  const baseOther = dim.type === 'horizontal' ? dim.L : dim.H;
+
+  // Sem altura, o modelo é proporcional ao volume: volume novo = volume registrado * fator.
+  // Para alterar somente D, V proporcional a D²; somente L/H, proporcional linearmente.
+  // O fator ótimo de escala é a regressão pela origem real/registrado.
+  let sumXY = 0, sumXX = 0;
+  rows.forEach(r => { sumXY += r.real * r.registered; sumXX += r.registered * r.registered; });
+  const factor = sumXX ? sumXY / sumXX : 1;
+
+  let newD = baseD, newOther = baseOther;
+  if (mode === 'diameter') newD = baseD * Math.sqrt(Math.max(factor, 0));
+  if (mode === 'length') newOther = baseOther * factor;
+  return { newD, newOther };
+}
+
+// Ajuste simultâneo: há infinitas combinações. Escolhemos a solução de menor alteração
+// relativa conjunta que reproduz o fator volumétrico encontrado.
+function fitBoth(dim, rows) {
+  let sumXY = 0, sumXX = 0;
+  rows.forEach(r => { sumXY += r.real * r.registered; sumXX += r.registered * r.registered; });
+  const factor = sumXX ? Math.max(sumXY / sumXX, 0.000001) : 1;
+
+  // Divide o ajuste de volume entre D² e a dimensão linear de forma equilibrada em termos percentuais.
+  const scaleD = Math.pow(factor, 1/3);
+  const scaleOther = Math.pow(factor, 1/3);
+  return { newD: dim.D * scaleD, newOther: dim.type === 'horizontal' ? dim.L * scaleOther : dim.H * scaleOther };
+}
+
+function predictedRegistered(r, dimOriginal, dimAdjusted) {
+  // Quando há altura informada, usamos o volume geométrico ajustado naquela altura.
+  // Sem altura, usamos a razão de volume total.
+  if (r.initialHeight != null && r.finalHeight != null) {
+    const baseDelta = Math.abs(modelVolume(dimOriginal, r.initialHeight) - modelVolume(dimOriginal, r.finalHeight));
+    const adjustedDelta = Math.abs(modelVolume(dimAdjusted, r.initialHeight) - modelVolume(dimAdjusted, r.finalHeight));
+    if (baseDelta > 0) return r.registered * (adjustedDelta / baseDelta);
+  }
+  const baseTotal = dimOriginal.type === 'horizontal'
+    ? horizontalVolume(dimOriginal.D, dimOriginal.L, dimOriginal.D)
+    : verticalVolume(dimOriginal.D, dimOriginal.H, dimOriginal.H);
+  const adjustedTotal = dimAdjusted.type === 'horizontal'
+    ? horizontalVolume(dimAdjusted.D, dimAdjusted.L, dimAdjusted.D)
+    : verticalVolume(dimAdjusted.D, dimAdjusted.H, dimAdjusted.H);
+  return r.registered * (adjustedTotal / baseTotal);
+}
+
+function meanAbsError(rows, dimOriginal, dimAdjusted) {
+  let total = 0;
+  rows.forEach(r => {
+    const predicted = predictedRegistered(r, dimOriginal, dimAdjusted);
+    total += Math.abs(predicted - r.real) / Math.max(r.real, 0.000001) * 100;
+  });
+  return total / rows.length;
+}
+
+function pct(a,b) {
+  return ((b-a)/a)*100;
+}
+function mm(v) {
+  return Number(v).toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+}
+function pc(v) {
+  return Number(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '%';
+}
+
+function calculate() {
+  clearError();
+  try {
+    const dim = getTypeAndDimensions();
+    const rows = getRows();
+
+    const baseError = rows.reduce((s,r) => s + Math.abs(r.real-r.registered)/r.real*100, 0) / rows.length;
+
+    const oneD = fitOneDimension(dim, rows, 'diameter');
+    const oneL = fitOneDimension(dim, rows, 'length');
+    const both = fitBoth(dim, rows);
+
+    const alternatives = [
+      {
+        key: 'length',
+        title: dim.type === 'horizontal' ? 'Ajuste somente do comprimento' : 'Ajuste somente da altura',
+        dim: { type: dim.type, D: dim.D, L: dim.type === 'horizontal' ? oneL.newOther : dim.H, H: dim.type === 'vertical' ? oneL.newOther : undefined },
+        changed: dim.type === 'horizontal' ? 'length' : 'height'
+      },
+      {
+        key: 'diameter',
+        title: 'Ajuste somente do diâmetro',
+        dim: { type: dim.type, D: oneD.newD, L: dim.L, H: dim.H },
+        changed: 'diameter'
+      },
+      {
+        key: 'both',
+        title: 'Ajuste de diâmetro + ' + (dim.type === 'horizontal' ? 'comprimento' : 'altura'),
+        dim: { type: dim.type, D: both.newD, L: dim.type === 'horizontal' ? both.newOther : undefined, H: dim.type === 'vertical' ? both.newOther : undefined },
+        changed: 'both'
+      }
+    ];
+
+    alternatives.forEach(a => {
+      a.error = meanAbsError(rows, dim, a.dim);
+    });
+
+    alternatives.sort((a,b) => a.error-b.error);
+    const best = alternatives[0];
+    let sumXY = 0, sumXX = 0;
+    rows.forEach(r => { sumXY += r.real * r.registered; sumXX += r.registered * r.registered; });
+    const calibrationFactor = sumXX ? sumXY / sumXX : 1;
+    lastCalibration = {
+      originalDim: dim,
+      bestDim: best.dim,
+      alternatives: alternatives,
+      factor: calibrationFactor
+    };
+
+    document.getElementById('bestResult').innerHTML = `
+      <div class="best-title">★ MELHOR ALTERNATIVA: ${best.title.toUpperCase()}</div>
+      <div class="result-grid">
+        <div class="metric"><small>Erro atual</small><strong>${pc(baseError)}</strong></div>
+        <div class="metric"><small>Erro após ajuste</small><strong>${pc(best.error)}</strong></div>
+        <div class="metric"><small>Diâmetro sugerido</small><strong>${mm(best.dim.D)} mm</strong></div>
+        <div class="metric"><small>${dim.type === 'horizontal' ? 'Comprimento' : 'Altura'} sugerido</small><strong>${mm(dim.type === 'horizontal' ? best.dim.L : best.dim.H)} mm</strong></div>
+      </div>
+    `;
+
+    document.getElementById('alternatives').innerHTML = alternatives.map((a,i) => {
+      const other = dim.type === 'horizontal' ? a.dim.L : a.dim.H;
+      const dChange = pct(dim.D, a.dim.D);
+      const otherBase = dim.type === 'horizontal' ? dim.L : dim.H;
+      const otherChange = pct(otherBase, other);
+      return `
+        <div class="alternative ${i===0 ? 'best':''}">
+          <h3>${i===0 ? '★ ' : ''}${a.title}</h3>
+          <div class="line">Diâmetro <b>${mm(a.dim.D)} mm</b></div>
+          <div class="line">Variação diâmetro <b>${pc(dChange)}</b></div>
+          <div class="line">${dim.type === 'horizontal' ? 'Comprimento' : 'Altura'} <b>${mm(other)} mm</b></div>
+          <div class="line">Variação ${dim.type === 'horizontal' ? 'comprimento' : 'altura'} <b>${pc(otherChange)}</b></div>
+          <div class="line">Erro estimado <b>${pc(a.error)}</b></div>
+        </div>
+      `;
+    }).join('');
+
+    populateSimulationOptions();
+    document.getElementById('results').style.display = '';
+    document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
+
+let lastCalibration = null;
+
+function populateSimulationOptions() {
+  if (!lastCalibration) return;
+  const select = document.getElementById('simulationOption');
+  select.innerHTML = '';
+
+  lastCalibration.alternatives.forEach((a, i) => {
+    const option = document.createElement('option');
+    option.value = String(i);
+    option.textContent = i === 0 ? `★ Melhor sugestão — ${a.title}` : a.title;
+    select.appendChild(option);
+  });
+
+  const manual = document.createElement('option');
+  manual.value = 'manual';
+  manual.textContent = 'Inserir dimensões manualmente';
+  select.appendChild(manual);
+
+  applySimulationOption();
+}
+
+function applySimulationOption() {
+  if (!lastCalibration) return;
+  const select = document.getElementById('simulationOption');
+  const value = select.value;
+  const otherLabel = document.getElementById('simOtherLabel');
+  const dInput = document.getElementById('simDiameter');
+  const otherInput = document.getElementById('simOther');
+
+  otherLabel.textContent =
+    lastCalibration.originalDim.type === 'horizontal'
+      ? 'Comprimento para simulação (mm)'
+      : 'Altura para simulação (mm)';
+
+  if (value !== 'manual') {
+    const a = lastCalibration.alternatives[Number(value)];
+    dInput.value = a.dim.D;
+    otherInput.value = lastCalibration.originalDim.type === 'horizontal' ? a.dim.L : a.dim.H;
+  }
+}
+
+function checkDischarge() {
+  if (!lastCalibration) return;
+
+  const hi = Number(document.getElementById('checkInitial').value);
+  const hf = Number(document.getElementById('checkFinal').value);
+  const d = Number(document.getElementById('simDiameter').value);
+  const other = Number(document.getElementById('simOther').value);
+  const out = document.getElementById('conferenceResult');
+
+  if (!(d > 0) || !(other > 0)) {
+    out.innerHTML = '<div class="error" style="display:block">Informe as dimensões que deseja usar na simulação.</div>';
+    return;
+  }
+  if (!(hi >= 0) || !(hf >= 0)) {
+    out.innerHTML = '<div class="error" style="display:block">Informe a altura inicial e a altura final da sonda.</div>';
+    return;
+  }
+
+  const type = lastCalibration.originalDim.type;
+  const simDim = type === 'horizontal'
+    ? { type, D: d, L: other }
+    : { type, D: d, H: other };
+
+  if (hi > d || hf > d) {
+    out.innerHTML = '<div class="error" style="display:block">Uma das alturas informadas é maior que o diâmetro/largura do tanque usado na simulação.</div>';
+    return;
+  }
+
+  const initialVolume = modelVolume(simDim, hi);
+  const finalVolume = modelVolume(simDim, hf);
+  const discharge = Math.abs(initialVolume - finalVolume);
+
+  const originalInitial = modelVolume(lastCalibration.originalDim, hi);
+  const originalFinal = modelVolume(lastCalibration.originalDim, hf);
+  const originalDischarge = Math.abs(originalInitial - originalFinal);
+  const difference = discharge - originalDischarge;
+
+  const otherName = type === 'horizontal' ? 'Comprimento usado' : 'Altura usada';
+
+  out.innerHTML = `
+    <div class="conference-result">
+      <div><small>Volume inicial calculado</small><br><strong>${mm(initialVolume)} L</strong></div>
+      <div style="margin-top:10px"><small>Volume final calculado</small><br><strong>${mm(finalVolume)} L</strong></div>
+      <div style="margin-top:10px"><small>DESCARGA SIMULADA</small><br><strong style="font-size:1.35em">${mm(discharge)} L</strong></div>
+      <hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">
+      <div><small>Comparação com as dimensões originais</small><br>
+      Descarga com o tanque original: <strong>${mm(originalDischarge)} L</strong><br>
+      Diferença causada pelo ajuste: <strong>${mm(difference)} L</strong></div>
+      <hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">
+      <div><small>Dimensões usadas na simulação</small><br>
+      Diâmetro: <strong>${mm(d)} mm</strong><br>
+      ${otherName}: <strong>${mm(other)} mm</strong></div>
+    </div>`;
+}
+
+
+['diameter','length','height','width'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', updateTankVolume);
+});
+for (let i=0; i<initialRows; i++) addRow();
+changeType();
+updateTankVolume();
+</script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js');
+      });
+    }
+  </script>
+</body>
+</html>
